@@ -2,7 +2,7 @@ use std::env;
 use std::fs::OpenOptions;
 use stl_io::read_stl;
 
-use stl_io::{Vertex, IndexedTriangle, Triangle};
+use stl_io::{IndexedTriangle, Triangle, Vertex};
 
 const Z: usize = 2;
 const Y: usize = 1;
@@ -40,20 +40,24 @@ struct Stage {
 }
 
 impl Stage {
-    pub fn get_slice(&self, height: f32) -> Option<Vec<Vertex>> {
+    pub fn get_slice(&self, height: f32) -> Option<Slice> {
         if height < self.min_height || height > self.max_height {
             return None;
         }
-        
-        Some(
-            self.links.iter().map(|line| {
+
+        let vertices: Vec<Vertex> = self
+            .links
+            .iter()
+            .map(|line| {
                 [
                     line.offset[X] + line.delta.0 * (height - line.offset[Z]),
                     line.offset[Y] + line.delta.1 * (height - line.offset[Z]),
                     height,
                 ]
-            }).collect()
-        )
+            })
+            .collect();
+
+        unimplemented!()
     }
 }
 
@@ -79,33 +83,37 @@ impl GetStage for stl_io::IndexedMesh {
 
         let max_height = current_height;
 
-        let selected: Vec<Triangle> = self.faces.iter().filter_map(|i_face| {
-            let mut is_above = false;
-            let mut is_below = false;
+        let selected: Vec<Triangle> = self
+            .faces
+            .iter()
+            .filter_map(|i_face| {
+                let mut is_above = false;
+                let mut is_below = false;
 
-            let mut face = default_triangle();
-            face.normal = i_face.normal;
+                let mut face = default_triangle();
+                face.normal = i_face.normal;
 
-            for (i, vertex_id) in i_face.vertices.iter().enumerate() {
-                let vertex = self.vertices[*vertex_id];
+                for (i, vertex_id) in i_face.vertices.iter().enumerate() {
+                    let vertex = self.vertices[*vertex_id];
 
-                face.vertices[i] = vertex;
+                    face.vertices[i] = vertex;
 
-                if vertex[Z] >= max_height {
-                    is_above = true;
+                    if vertex[Z] >= max_height {
+                        is_above = true;
+                    }
+                    if vertex[Z] <= min_height {
+                        is_below = true;
+                    }
                 }
-                if vertex[Z] <= min_height {
-                    is_below = true;
+
+                if !is_above || !is_below {
+                    return None;
                 }
-            }
 
-            if !is_above || !is_below {
-                return None
-            }
+                Some(face)
+            })
+            .collect();
 
-            Some(face)
-        }).collect();
-        
         let mut links: Vec<Line> = vec![];
 
         for face in selected.iter() {
@@ -113,14 +121,14 @@ impl GetStage for stl_io::IndexedMesh {
             let mut vertices = face.vertices.clone();
 
             // Very usefull to make assomptions on the triangle shape
-            vertices.sort_by(|a, b| {
-                a[Z].partial_cmp(&b[Z]).unwrap()
-            });
+            vertices.sort_by(|a, b| a[Z].partial_cmp(&b[Z]).unwrap());
 
             let segments: Vec<Segment>;
 
             // Dissmissing flat triangles
-            if equal_float(vertices[0][Z], vertices[1][Z]) && equal_float(vertices[0][Z], vertices[2][Z]) {
+            if equal_float(vertices[0][Z], vertices[1][Z])
+                && equal_float(vertices[0][Z], vertices[2][Z])
+            {
                 continue;
             } else if equal_float(vertices[0][Z], vertices[1][Z]) {
                 segments = vec![
@@ -151,8 +159,10 @@ impl GetStage for stl_io::IndexedMesh {
             for segment in segments.iter() {
                 links.push(Line {
                     delta: (
-                        (segment.vertices[1][X] - segment.vertices[0][X]) / (segment.vertices[1][Z] - segment.vertices[0][Z]),
-                        (segment.vertices[1][Y] - segment.vertices[0][Y]) / (segment.vertices[1][Z] - segment.vertices[0][Z]),
+                        (segment.vertices[1][X] - segment.vertices[0][X])
+                            / (segment.vertices[1][Z] - segment.vertices[0][Z]),
+                        (segment.vertices[1][Y] - segment.vertices[0][Y])
+                            / (segment.vertices[1][Z] - segment.vertices[0][Z]),
                     ),
                     offset: segment.vertices[0],
                 })
@@ -175,9 +185,9 @@ impl Lowest for stl_io::IndexedMesh {
     fn lowest(&self) -> Option<f32> {
         let first = self.vertices.first()?[Z];
         Some(
-            self.vertices.iter().fold(first, |acc, v| {
-                if v[Z] < acc { v[Z] } else { acc }
-            })
+            self.vertices
+                .iter()
+                .fold(first, |acc, v| if v[Z] < acc { v[Z] } else { acc }),
         )
     }
 }
@@ -190,9 +200,9 @@ impl Highest for stl_io::IndexedMesh {
     fn highest(&self) -> Option<f32> {
         let first = self.vertices.first()?[Z];
         Some(
-            self.vertices.iter().fold(first, |acc, v| {
-                if v[Z] > acc { v[Z] } else { acc }
-            })
+            self.vertices
+                .iter()
+                .fold(first, |acc, v| if v[Z] > acc { v[Z] } else { acc }),
         )
     }
 }
@@ -228,18 +238,64 @@ impl<T: GetStage + Lowest> IterStages for T {
     }
 }
 
+struct Slice {
+    pub height: f32,
+    pub polygon: Polygon,
+}
+
+struct SliceIterator<'a, T>
+where
+    T: Iterator<Item = Stage>,
+{
+    current: &'a Stage,
+    inner: &'a T,
+    last_height: f32,
+    step: f32,
+}
+
+impl<'a, T> Iterator for SliceIterator<'a, T>
+where
+    T: Iterator<Item = Stage>,
+{
+    type Item = Slice;
+
+    fn next(&mut self) -> Option<Slice> {
+        let height = self.last_height + self.step;
+
+        if height > self.current.max_height {
+            self.current = &self.inner.next()?;
+        }
+
+        self.current.get_slice(height)
+    }
+}
+
+trait IterSlices {
+    type Inner: Iterator<Item = Stage>;
+    fn iter_slices(&self, step: f32) -> Option<SliceIterator<Self::Inner>>;
+}
+
+impl<T: Iterator<Item = Stage>> IterSlices for T {
+    type Inner = T;
+    fn iter_slices(&self, step: f32) -> Option<SliceIterator<Self::Inner>> {
+        let current = self.next()?;
+
+        Some(SliceIterator {
+            current: &current,
+            inner: self,
+            last_height: current.min_height,
+            step,
+        })
+    }
+}
+
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
 
     let mut file = OpenOptions::new().read(true).open(args[1].clone()).unwrap();
     let stl = read_stl(&mut file).unwrap();
 
-    let stages: Vec<Stage> = stl.iter_stages().ok_or(())?.collect();
-
-    let stage = stages.get(0).unwrap();
-
-    println!("{:#?}", stage.get_slice(0.5));
+    let slices: Vec<Slice> = stl.iter_stages().ok_or(())?.iter_slices(0.2)?.collect();
 
     Ok(())
 }
- 
