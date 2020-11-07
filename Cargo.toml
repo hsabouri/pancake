@@ -1,5 +1,5 @@
 [package]
-name = "slicer"
+name = "pancake"
 version = "0.1.0"
 authors = ["Hugo Sabourin <hsabouri@student.42.fr>"]
 edition = "2018"
