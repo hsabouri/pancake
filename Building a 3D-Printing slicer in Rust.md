@@ -102,13 +102,13 @@ fn main() {
         
     	for triangle in obj.iter() {
             // We use labels to be sure what loop will break.
-        	'inner: for segment in triangle.iter() {
-            	if is_intersected(segment, h) {
-                	let intersection = get_triangle_intersection(triangle, h);
+            'inner: for segment in triangle.iter() {
+                if is_intersected(segment, h) {
+                    let intersection = get_triangle_intersection(triangle, h);
                 
-                	slice.push(intersection);
+                    slice.push(intersection);
                     break 'inner;
-            	}
+                }
         	}
     	}
         
