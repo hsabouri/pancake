@@ -86,6 +86,8 @@ fn is_intersected(seg: Segment, h: f32) -> bool {...}
 
 fn get_triangle_intersection(tri: Triangle, h: f32) -> Segment {...}
 
+fn gcode(slices: Vec<Polygon>) {...}
+
 fn main() {
     let args = env::args.collect();
     let obj = parse(args[1]);
@@ -114,6 +116,8 @@ fn main() {
         
         slices.push(slice);
     }
+    
+    gcode(slices);
 }
 ```
 
@@ -123,15 +127,15 @@ fn main() {
 
 If we analyze the complexity of this pseudo program we have :
 
-- for each slice (H)
-- for each triangle (T)
-- for each segment (3)
+- for each slice : $H$
+- for each triangle : $T$
+- for each segment : $3$
 
 $$
 O(H * T * 3) \rightarrow O(H * T)
 $$
 
-Which is bad but could be worst ! I refuse to simplify it to $O(n^2)$ because $H$ is usually orders of magnitude smaller than $T$. We can say it's pseudo $O(n^2)$ if you wish...
+Which is bad ! I refuse to simplify it to $O(n^2)$ because $H$ is usually orders of magnitude smaller than $T$. We can say it's pseudo $O(n^2)$ if you wish...
 
 Anyway,
 
@@ -141,4 +145,10 @@ You :	WHAT ?
 
 Me  :	Yes.
 
-Removing $T$ means we already know what polygons to integrate into our fresh slice of 3D object. There are multiple ways to approach it, the obvious one would be to sort our Triangles from top to bottom. But believe, we can do better.
+Removing $T$ means we already know what polygons to integrate into our fresh slice of 3D object. The obvious solution would be to sort our Triangles from top to bottom, but it won't be a big improvement. [explain]
+
+## Stages
+
+While discussing about this problem with a coworker, we found an elegant solution. By dividing the model in carefully chosen stages, we can avoid searching for polygons at every slice.
+
+ 
