@@ -214,3 +214,34 @@ impl RotateZ for stl_io::IndexedMesh {
         self
     }
 }
+
+pub trait Center {
+    fn center(self) -> Self;
+}
+
+impl Center for stl_io::IndexedMesh {
+    fn center(self) -> Self {
+        let len = self.vertices.len() as f32;
+        let first = self.vertices.iter().next();
+
+        if let Some(first) = first {
+            let total = self.vertices.iter().fold(*first, |acc, v| {
+                [
+                    acc[X] + v[X],
+                    acc[Y] + v[Y],
+                    acc[Z] + v[Z],
+                ]
+            });
+
+            let offset = [
+                total[X] / len,
+                total[Y] / len,
+                total[Z] / len,
+            ];
+
+            self.displace(offset[X], offset[Y], offset[Z])
+        } else {
+            self
+        }
+    }
+}

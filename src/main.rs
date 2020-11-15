@@ -20,6 +20,7 @@ use math::{
     Displace,
     Scale,
     Homothety,
+    Center,
 };
 use slice::{Slice, IterSlices};
 use stage::IterStages;
@@ -40,7 +41,7 @@ fn transformations(mut stl: stl_io::IndexedMesh, raw: &str) -> stl_io::IndexedMe
             Transform::Move(x, y, z) => stl.displace(x, y, z),
             Transform::Scale(x, y, z) => stl.scale(x, y, z),
             Transform::Homothety(v) => stl.homothety(v),
-            Transform::Center => unimplemented!("Center() is not yet implemented"),
+            Transform::Center => stl.center(),
             _ => stl,
         }
     }
