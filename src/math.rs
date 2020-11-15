@@ -117,3 +117,100 @@ impl Highest for stl_io::IndexedMesh {
     }
 }
 
+pub trait Scale {
+    fn scale(self, x: f32, y: f32, z: f32) -> Self;
+}
+
+impl Scale for stl_io::IndexedMesh {
+    fn scale(mut self, x: f32, y: f32, z: f32) -> Self {
+        for vertice in self.vertices.iter_mut() {
+            vertice[X] = vertice[X] * x;
+            vertice[Y] = vertice[Y] * y;
+            vertice[Z] = vertice[Z] * z;
+        }
+        
+        self
+    }
+}
+
+pub trait Homothety {
+    fn homothety(self, s: f32) -> Self;
+}
+
+impl<T> Homothety for T
+where 
+    T: Scale
+{
+    fn homothety(self, s: f32) -> Self {
+        self.scale(s, s, s)
+    }
+}
+
+pub trait Displace {
+    fn displace(self, x: f32, y: f32, z: f32) -> Self;
+}
+
+impl Displace for stl_io::IndexedMesh {
+    fn displace(mut self, x: f32, y: f32, z: f32) -> Self {
+        for vertice in self.vertices.iter_mut() {
+            vertice[X] = vertice[X] + x;
+            vertice[Y] = vertice[Y] + y;
+            vertice[Z] = vertice[Z] + z;
+        }
+        
+        self       
+    }
+}
+
+// TODO: Use Quaternions
+pub trait RotateX {
+    fn rotate_x(self, theta: f32) -> Self;
+}
+
+impl RotateX for stl_io::IndexedMesh {
+    fn rotate_x(mut self, theta: f32) -> Self {
+        let cos_t = theta.cos();
+        let sin_t = theta.sin();
+
+        for vertice in self.vertices.iter_mut() {
+            vertice[Y] = cos_t * vertice[Y] - sin_t * vertice[Z];
+            vertice[Z] = sin_t * vertice[Y] + cos_t * vertice[Z];
+        }
+
+        self
+    }
+}
+pub trait RotateY {
+    fn rotate_y(self, theta: f32) -> Self;
+}
+
+impl RotateY for stl_io::IndexedMesh {
+    fn rotate_y(mut self, theta: f32) -> Self {
+        let cos_t = theta.cos();
+        let sin_t = theta.sin();
+
+        for vertice in self.vertices.iter_mut() {
+            vertice[X] = cos_t * vertice[X] + sin_t * vertice[Z];
+            vertice[Z] = cos_t * vertice[Z] - sin_t * vertice[X];
+        }
+
+        self
+    }
+}
+pub trait RotateZ {
+    fn rotate_z(self, theta: f32) -> Self;
+}
+
+impl RotateZ for stl_io::IndexedMesh {
+    fn rotate_z(mut self, theta: f32) -> Self {
+        let cos_t = theta.cos();
+        let sin_t = theta.sin();
+
+        for vertice in self.vertices.iter_mut() {
+            vertice[X] = cos_t * vertice[X] - sin_t * vertice[Y];
+            vertice[Y] = sin_t * vertice[X] + cos_t * vertice[Y];
+        }
+
+        self
+    }
+}

@@ -1,35 +1,99 @@
-use std::env;
 use std::fs::OpenOptions;
 use stl_io::read_stl;
+use clap::{
+    Arg,
+    App,
+};
 
 mod gcode;
 mod math;
 mod stage;
 mod slice;
+pub mod ast;
 
 use gcode::Printer;
-use math::{ X, Y, Z };
+use math::{
+    X, Y, Z,
+    RotateX,
+    RotateY,
+    RotateZ,
+    Displace,
+    Scale,
+    Homothety,
+};
 use slice::{Slice, IterSlices};
 use stage::IterStages;
+use ast::{Transform, Axis};
 
-fn main() -> Result<(), ()> {
-    let args: Vec<String> = env::args().collect();
-    let mult: f32 = args.get(2).unwrap_or(&"1.0".to_string()).parse().unwrap_or(1.0);
-    let layer_height = args.get(3).unwrap_or(&"0.1".to_string()).parse().unwrap_or(0.1);
+use lalrpop_util::lalrpop_mod;
 
-    let mut file = OpenOptions::new().read(true).open(args[1].clone()).unwrap();
-    let mut stl = read_stl(&mut file).unwrap();
+lalrpop_mod!(pub transform);
 
-    for vertice in stl.vertices.iter_mut() {
-        vertice[X] = vertice[X] * mult;
-        vertice[Y] = vertice[Y] * mult;
-        vertice[Z] = vertice[Z] * mult;
+fn transformations(mut stl: stl_io::IndexedMesh, raw: &str) -> stl_io::IndexedMesh {
+    let transformations: Vec<Transform> = transform::TransformsParser::new().parse(raw).unwrap();
+
+    for transform in transformations.into_iter() {
+        stl = match transform {
+            Transform::Rotate(Axis::X, theta) => stl.rotate_x(theta),
+            Transform::Rotate(Axis::Y, theta) => stl.rotate_y(theta),
+            Transform::Rotate(Axis::Z, theta) => stl.rotate_z(theta),
+            Transform::Move(x, y, z) => stl.displace(x, y, z),
+            Transform::Scale(x, y, z) => stl.scale(x, y, z),
+            Transform::Homothety(v) => stl.homothety(v),
+            Transform::Center => unimplemented!("Center() is not yet implemented"),
+            _ => stl,
+        }
     }
 
+    stl
+}
+
+fn main() -> anyhow::Result<()> {
+    let matches = App::new("Pancake")
+        .version("1.0")
+        .author("Hugo S. <hsabouri@student.42.fr>")
+        .about("Simple and fast 3D printing Slicer made in Rust")
+        .arg(Arg::new("model")
+            .required(true)
+            .about(".stl file to slice")
+            .value_name("MODEL"))
+        .arg(Arg::new("layer_height")
+            .takes_value(true)
+            .short('l')
+            .long("layer-height")
+            .default_value("0.1")
+            .about("Layer height in millimeters"))
+        .arg(Arg::new("transform")
+            .short('t')
+            .long("transform")
+            .takes_value(true)
+            .about("Transform the model before slicing"))
+        .get_matches();
+
+    let file_path = matches.value_of("model").expect("Error: No .stl file. Expected: String");
+
+    let mut file = OpenOptions::new()
+        .read(true)
+        .open(file_path)
+        .unwrap();
+
+    let layer_height: f32 = matches
+        .value_of("layer_height")
+        .unwrap_or(&"0.1".to_string())
+        .parse()
+        .expect("Error: Invalid layer_height. Expected: float");
+
+    let mut stl = read_stl(&mut file).unwrap();
+
+    if let Some(raw) = matches.value_of("transform") {
+        stl = transformations(stl, raw);
+    }
+
+
     let slices: Vec<Slice> = stl.iter_stages()
-        .ok_or(())?
+        .unwrap()
         .iter_slices(0.2)
-        .ok_or(())?
+        .unwrap()
         .collect();
 
     Printer::print(slices.into_iter(), layer_height);
