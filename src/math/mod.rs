@@ -28,7 +28,7 @@ pub fn equal_vertices(a: Vertex, b: Vertex) -> bool {
 
 #[derive(Debug, Clone)]
 pub struct Segment {
-    pub normal: [f32; 3],
+    pub normal: Vertex,
     pub vertices: [Vertex; 2],
 }
 
@@ -38,6 +38,19 @@ impl Segment {
 
         self.vertices[0] = a;
         self.vertices[1] = b;
+    }
+
+    pub fn correct_direction(&mut self) {
+        let a = self.vertices[0];
+        let b = self.vertices[1];
+        let c = self.normal;
+
+        let det = (b[X] - a[X]) * (c[Y] - a[Y]) - (b[Y] - a[Y]) * (c[X] - a[X]);
+
+        if det <= 1.0 {
+            self.vertices[0] = b;
+            self.vertices[1] = a;
+        }
     }
 }
 

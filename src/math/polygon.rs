@@ -41,7 +41,7 @@ impl Polygon {
     }
 
     fn merge_matches(poly_vec: &mut Vec<Self>, mut poly_ids: Vec<(usize, Push)>) {
-        // Invert sort to avoid offsetting ids when removing in the vector
+        // Sort in reverse order to avoid offsetting ids when removing in the vector
         poly_ids.sort_by(|(i, _), (other, _)| other.cmp(i));
 
         let mut new_poly_vec = vec![];
@@ -65,7 +65,7 @@ impl Polygon {
         poly_vec.extend(new_poly_vec.into_iter());
     }
 
-    fn find_and_assign(poly_vec: &mut Vec<Self>, seg: &Segment) {
+    fn find_and_assign(poly_vec: &mut Vec<Self>, seg: Segment) {
         let poly_ids: Vec<(usize, Push)> = poly_vec.iter().enumerate().filter_map(|(i, poly)| {
 
             let belongs = poly.0.iter().find_map(|poly_seg| {
@@ -94,16 +94,18 @@ impl Polygon {
         } else {
             poly_vec.push(Polygon::new(vec![seg.clone()]));
         }
-
-        eprintln!("Number of polys : {}", poly_vec.len());
     }
 
     pub fn build(input: Vec<Segment>) -> Vec<Self> {
         let mut ret: Vec<Self> = vec![];
 
-        for seg in input.iter() {
+        for mut seg in input.into_iter() {
+            seg.correct_direction();
+
             Self::find_and_assign(&mut ret, seg);
         }
+
+        eprintln!("Number of polys : {}", ret.len());
 
         ret
     }
