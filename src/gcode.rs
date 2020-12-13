@@ -152,46 +152,48 @@ impl Printer {
 
         for (i, slice) in input.enumerate() {
             println!(";LAYER:{}", i + 1);
-            for segment in slice.polygon.into_iter() {
-                let first_point = segment.vertices[0];
-                let second_point = segment.vertices[1];
+            for polygon in slice.polygons.into_iter() {
+                for segment in polygon.into_iter() {
+                    let first_point = segment.vertices[0];
+                    let second_point = segment.vertices[1];
 
-                if first_draw {
-                    state.offset = Vec4 {
-                        x: first_point[X],
-                        y: first_point[Y],
-                        z: first_point[Z],
-                        e: 0.0,
-                    };
-                } else {
-                    // TODO: possible inversion of figure here
-                    state.move_by(
-                        first_point[X] - state.offset.x,
-                        first_point[Y] - state.offset.y,
-                        first_point[Z] - state.offset.z,
-                        0.0,
+                    if first_draw {
+                        state.offset = Vec4 {
+                            x: first_point[X],
+                            y: first_point[Y],
+                            z: first_point[Z],
+                            e: 0.0,
+                        };
+                    } else {
+                        // TODO: possible inversion of figure here
+                        state.move_by(
+                            first_point[X] - state.offset.x,
+                            first_point[Y] - state.offset.y,
+                            first_point[Z] - state.offset.z,
+                            0.0,
+                        );
+                        state.offset = Vec4 {
+                            x: first_point[X],
+                            y: first_point[Y],
+                            z: first_point[Z],
+                            e: 0.0,
+                        };
+                    }
+
+                    state.print_by(
+                        second_point[X] - state.offset.x,
+                        second_point[Y] - state.offset.y,
+                        second_point[Z] - state.offset.z,
                     );
                     state.offset = Vec4 {
-                        x: first_point[X],
-                        y: first_point[Y],
-                        z: first_point[Z],
+                        x: second_point[X],
+                        y: second_point[Y],
+                        z: second_point[Z],
                         e: 0.0,
                     };
+
+                    first_draw = false;
                 }
-
-                state.print_by(
-                    second_point[X] - state.offset.x,
-                    second_point[Y] - state.offset.y,
-                    second_point[Z] - state.offset.z,
-                );
-                state.offset = Vec4 {
-                    x: second_point[X],
-                    y: second_point[Y],
-                    z: second_point[Z],
-                    e: 0.0,
-                };
-
-                first_draw = false;
             }
         }
 

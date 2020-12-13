@@ -1,5 +1,9 @@
-use std::convert::{Into, From};
+use std::convert::From;
 use stl_io::{Triangle, Vertex};
+
+mod polygon;
+
+pub use polygon::Polygon;
 
 pub const Z: usize = 2;
 pub const Y: usize = 1;
@@ -28,6 +32,15 @@ pub struct Segment {
     pub vertices: [Vertex; 2],
 }
 
+impl Segment {
+    pub fn reverse(&mut self) {
+        let (a, b) = (self.vertices[1], self.vertices[0]);
+
+        self.vertices[0] = a;
+        self.vertices[1] = b;
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Line {
     pub delta: (f32, f32),
@@ -45,45 +58,6 @@ impl From<&Segment> for Line {
             ),
             offset: seg.vertices[0],
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Polygon (Vec<Segment>);
-
-impl Polygon {
-    pub fn new(into: Vec<Segment>) -> Self {
-        Self (into)
-    }
-
-    fn find_and_assign(poly_vec: &mut Vec<Self>, seg: &Segment) {
-        // TODO: polygon fuse algo
-        unimplemented!()
-    }
-
-    pub fn build(input: Vec<Segment>) -> Vec<Self> {
-        let mut ret: Vec<Self> = vec![];
-
-        for seg in input.iter() {
-            Self::find_and_assign(&mut ret, seg);
-        }
-
-        ret
-    }
-}
-
-impl Into<Vec<Segment>> for Polygon {
-    fn into(self) -> Vec<Segment> {
-        self.0
-    }
-}
-
-impl IntoIterator for Polygon {
-    type Item = Segment;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
     }
 }
 

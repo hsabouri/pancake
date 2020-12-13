@@ -10,7 +10,7 @@ use super::{
 #[derive(Debug, Clone)]
 pub struct Slice {
     pub height: f32,
-    pub polygon: Polygon,
+    pub polygons: Vec<Polygon>,
 }
 
 pub trait GetSlice {
@@ -48,7 +48,7 @@ impl GetSlice for Stage {
         Some(
             Slice {
                 height,
-                polygon: Polygon::new(segments),
+                polygons: Polygon::build(segments),
             }
         )
     }
