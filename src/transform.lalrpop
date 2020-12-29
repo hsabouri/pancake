@@ -16,7 +16,7 @@ Transform: Transform = {
     "rotate(" <Axis> "," <Term> ")" => Transform::Rotate(<>),
     "center()" => Transform::Center,
     "move(" <Term> "," <Term> "," <Term> ")" => Transform::Move(<>),
-    "Scale(" <Term> "," <Term> "," <Term> ")" => Transform::Scale(<>),
+    "scale(" <Term> "," <Term> "," <Term> ")" => Transform::Scale(<>),
     "homothety(" <Term> ")" => Transform::Homothety(<>),
 }
 
