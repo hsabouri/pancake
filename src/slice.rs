@@ -19,10 +19,6 @@ pub trait GetSlice {
 
 impl GetSlice for Stage {
     fn get_slice(&self, height: f32) -> Option<Slice> {
-        if height < self.min_height || height > self.max_height {
-            return None;
-        }
-
         let segments: Vec<Segment> = self
             .links
             .iter()
@@ -54,6 +50,7 @@ impl GetSlice for Stage {
     }
 }
 
+#[derive(Debug)]
 pub struct SliceIterator<'a, T>
 where
     T: Iterator<Item = Stage>,
