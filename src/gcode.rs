@@ -54,9 +54,7 @@ M82 ;absolute extrusion mode
 M104 S0
 ";
 
-// TODO: run a test with these settings
-
-pub const FLOW: f32 = 0.05;
+pub const FLOW: f32 = 0.045;
 
 use super::Slice;
 use super::{X, Y, Z};
@@ -84,6 +82,7 @@ pub struct Printer {
 }
 
 impl Printer {
+    // Absolute position
     fn move_to(&mut self, x: f32, y: f32, z: f32, e: f32) {
         self.cur_pos.x = x;
         self.cur_pos.y = y;
@@ -93,6 +92,7 @@ impl Printer {
         println!("G1 X{} Y{} Z{} E{}", x, y, z, e);
     }
 
+    // Relative position
     fn move_by(&mut self, x: f32, y: f32, z: f32, e: f32) {
         self.move_to(
             self.cur_pos.x + x,
@@ -102,6 +102,7 @@ impl Printer {
         );
     }
 
+    // Absolute position
     fn print_to(&mut self, x: f32, y: f32, z: f32) {
         let e = get_distance(self.cur_pos.clone(), Vec4 {x, y, z, e: 0.0}) * FLOW;
 
@@ -113,6 +114,7 @@ impl Printer {
         );
     }
 
+    // Relative position
     fn print_by(&mut self, x: f32, y: f32, z: f32) {
         let e = get_distance(
             Vec4 {x: 0.0, y: 0.0, z: 0.0, e: 0.0},
@@ -145,12 +147,19 @@ impl Printer {
             }
         };
 
+        // Center print-head
         state.move_by(0.0, 0.0, 10.0, 0.0);
         state.move_to(100.0, 100.0, first_layer_height, 0.0);
 
         let mut first_draw = true;
 
+        // Drawing slices
         for (i, slice) in input.enumerate() {
+            if i == 5 {
+                // Fan full power at layer 5
+                println!("M106 S255");
+            }
+
             println!(";LAYER:{}", i + 1);
             for polygon in slice.polygons.into_iter() {
                 for segment in polygon.into_iter() {
@@ -165,7 +174,6 @@ impl Printer {
                             e: 0.0,
                         };
                     } else {
-                        // TODO: possible inversion of figure here
                         state.move_by(
                             first_point[X] - state.offset.x,
                             first_point[Y] - state.offset.y,

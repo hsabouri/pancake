@@ -1,30 +1,18 @@
+use clap::{App, Arg};
 use std::fs::OpenOptions;
 use stl_io::read_stl;
-use clap::{
-    Arg,
-    App,
-};
 
+pub mod ast;
 mod gcode;
 mod math;
-mod stage;
 mod slice;
-pub mod ast;
+mod stage;
 
+use ast::{Axis, Transform};
 use gcode::Printer;
-use math::{
-    X, Y, Z,
-    RotateX,
-    RotateY,
-    RotateZ,
-    Displace,
-    Scale,
-    Homothety,
-    Center,
-};
-use slice::{Slice, IterSlices};
+use math::{Center, Displace, Homothety, RotateX, RotateY, RotateZ, Scale, X, Y, Z};
+use slice::{IterSlices, Slice};
 use stage::IterStages;
-use ast::{Transform, Axis};
 
 use lalrpop_util::lalrpop_mod;
 
@@ -54,29 +42,34 @@ fn main() -> anyhow::Result<()> {
         .version("1.0")
         .author("Hugo S. <hsabouri@student.42.fr>")
         .about("Simple and fast 3D printing Slicer made in Rust")
-        .arg(Arg::new("model")
-            .required(true)
-            .about(".stl file to slice")
-            .value_name("MODEL"))
-        .arg(Arg::new("layer_height")
-            .takes_value(true)
-            .short('l')
-            .long("layer-height")
-            .default_value("0.1")
-            .about("Layer height in millimeters"))
-        .arg(Arg::new("transform")
-            .short('t')
-            .long("transform")
-            .takes_value(true)
-            .about("Transform the model before slicing"))
+        .arg(
+            Arg::new("model")
+                .required(true)
+                .about(".stl file to slice")
+                .value_name("MODEL"),
+        )
+        .arg(
+            Arg::new("layer_height")
+                .takes_value(true)
+                .short('l')
+                .long("layer-height")
+                .default_value("0.1")
+                .about("Layer height in millimeters"),
+        )
+        .arg(
+            Arg::new("transform")
+                .short('t')
+                .long("transform")
+                .takes_value(true)
+                .about("Transform the model before slicing"),
+        )
         .get_matches();
 
-    let file_path = matches.value_of("model").expect("Error: No .stl file. Expected: String");
+    let file_path = matches
+        .value_of("model")
+        .expect("Error: No .stl file. Expected: String");
 
-    let mut file = OpenOptions::new()
-        .read(true)
-        .open(file_path)
-        .unwrap();
+    let mut file = OpenOptions::new().read(true).open(file_path).unwrap();
 
     let layer_height: f32 = matches
         .value_of("layer_height")
@@ -90,8 +83,8 @@ fn main() -> anyhow::Result<()> {
         stl = transformations(stl, raw);
     }
 
-
-    let slices: Vec<Slice> = stl.iter_stages()
+    let slices: Vec<Slice> = stl
+        .iter_stages()
         .unwrap()
         .iter_slices(0.2)
         .unwrap()
