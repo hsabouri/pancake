@@ -47,7 +47,7 @@ impl Segment {
 
         let det = (b[X] - a[X]) * (c[Y] - a[Y]) - (b[Y] - a[Y]) * (c[X] - a[X]);
 
-        if det <= 1.0 {
+        if det < 0.0 {
             self.vertices[0] = b;
             self.vertices[1] = a;
         }
@@ -62,14 +62,16 @@ pub struct Line {
 
 impl From<&Segment> for Line {
     fn from(seg: &Segment) -> Self {
+        let a = seg.vertices[0];
+        let b = seg.vertices[1];
+        let h = b[Z] - a[Z];
+
         Line {
             delta: (
-                (seg.vertices[1][X] - seg.vertices[0][X])
-                    / (seg.vertices[1][Z] - seg.vertices[0][Z]),
-                (seg.vertices[1][Y] - seg.vertices[0][Y])
-                    / (seg.vertices[1][Z] - seg.vertices[0][Z]),
+                (b[X] - a[X]) / h,
+                (b[Y] - a[Y]) / h,
             ),
-            offset: seg.vertices[0],
+            offset: a,
         }
     }
 }
