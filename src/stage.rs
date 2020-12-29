@@ -1,18 +1,11 @@
+use super::math::{default_triangle, equal_float, Highest, Line, Lowest, Segment, X, Y, Z};
 use stl_io::{Triangle, Vertex};
-use super::math::{
-    Line,
-    Segment,
-    X, Y, Z,
-    equal_float,
-    default_triangle,
-    Lowest,
-    Highest,
-};
 
 #[derive(Debug, Clone)]
 pub struct Stage {
     pub min_height: f32,
     pub max_height: f32,
+    // Line, Line, Normal
     pub links: Vec<(Line, Line, [f32; 3])>,
 }
 
@@ -38,6 +31,7 @@ impl GetStage for stl_io::IndexedMesh {
 
         let max_height = current_height;
 
+        // Selecting in range triangles
         let selected: Vec<Triangle> = self
             .faces
             .iter()
@@ -71,29 +65,33 @@ impl GetStage for stl_io::IndexedMesh {
 
         let mut links: Vec<(Line, Line, Vertex)> = vec![];
 
+        // Selecting 2 segments of each triangle
         for face in selected.iter() {
             let normal = face.normal;
             let mut vertices = face.vertices.clone();
 
-            // Sorting to make assomptions on the triangle shape
+            // Sorting bottom to top, to make assomptions on the triangle shape
             vertices.sort_by(|a, b| a[Z].partial_cmp(&b[Z]).unwrap());
+
+            let vertices = vertices;
+            let a = vertices[0];
+            let b = vertices[1];
+            let c = vertices[2];
 
             let segments: Vec<Segment>;
 
-            // Dissmissing flat triangles
-            if equal_float(vertices[0][Z], vertices[1][Z])
-                && equal_float(vertices[0][Z], vertices[2][Z])
-            {
+            // Dismissing flat triangles
+            if equal_float(a[Z], b[Z]) && equal_float(a[Z], c[Z]) {
                 continue;
-            } else if equal_float(vertices[0][Z], vertices[1][Z]) {
+            } else if equal_float(a[Z], b[Z]) || b[Z] <= min_height {
                 segments = vec![
                     Segment {
                         normal,
-                        vertices: [vertices[0], vertices[2]],
+                        vertices: [a, c],
                     },
                     Segment {
                         normal,
-                        vertices: [vertices[1], vertices[2]],
+                        vertices: [b, c],
                     },
                     // Dissmissing last segment (0,1) which is flat
                 ];
@@ -101,21 +99,17 @@ impl GetStage for stl_io::IndexedMesh {
                 segments = vec![
                     Segment {
                         normal,
-                        vertices: [vertices[0], vertices[1]],
+                        vertices: [a, b],
                     },
                     Segment {
                         normal,
-                        vertices: [vertices[0], vertices[2]],
+                        vertices: [a, c],
                     },
                     // Dissmissing last segment (1,2) which won't collide
                 ];
             }
 
-            links.push((
-                Line::from(&segments[0]),
-                Line::from(&segments[1]),
-                normal)
-            );
+            links.push((Line::from(&segments[0]), Line::from(&segments[1]), normal));
         }
 
         Some(Stage {
@@ -126,7 +120,7 @@ impl GetStage for stl_io::IndexedMesh {
     }
 }
 
-
+#[derive(Debug)]
 pub struct StageIterator<'a, T: GetStage> {
     inner: &'a T,
     last_height: f32,
@@ -157,4 +151,3 @@ impl<T: GetStage + Lowest> IterStages for T {
         })
     }
 }
-
