@@ -20,7 +20,7 @@ Transform: Transform = {
     "homothety(" <Term> ")" => Transform::Homothety(<>),
 }
 
-Term: f32 = { Num, "(" <Term> ")" };
+Term: f64 = { Num, "(" <Term> ")" };
 
 Axis: Axis =  {
     r"[xX]" => Axis::X,
@@ -28,4 +28,4 @@ Axis: Axis =  {
     r"[zZ]" => Axis::Z,
 };
 
-Num: f32 = r"[0-9]+(.[0-9]+)?" => f32::from_str(<>).unwrap();
+Num: f64 = r"[0-9]+(.[0-9]+)?" => f64::from_str(<>).unwrap();

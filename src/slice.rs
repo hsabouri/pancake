@@ -7,18 +7,20 @@ use super::{
     },
 };
 
+use stl_io::Vector;
+
 #[derive(Debug, Clone)]
 pub struct Slice {
-    pub height: f32,
+    pub height: f64,
     pub polygons: Vec<Polygon>,
 }
 
 pub trait GetSlice {
-    fn get_slice(&self, height: f32) -> Option<Slice>;
+    fn get_slice(&self, height: f64) -> Option<Slice>;
 }
 
 impl GetSlice for Stage {
-    fn get_slice(&self, height: f32) -> Option<Slice> {
+    fn get_slice(&self, height: f64) -> Option<Slice> {
         let segments: Vec<Segment> = self
             .links
             .iter()
@@ -26,16 +28,16 @@ impl GetSlice for Stage {
                 Segment {
                     normal: normal.clone(),
                     vertices: [
-                        [
+                        Vector::new([
                             line_a.offset[X] + line_a.delta.0 * (height - line_a.offset[Z]),
                             line_a.offset[Y] + line_a.delta.1 * (height - line_a.offset[Z]),
                             height,
-                        ],
-                        [
+                        ]),
+                        Vector::new([
                             line_b.offset[X] + line_b.delta.0 * (height - line_b.offset[Z]),
                             line_b.offset[Y] + line_b.delta.1 * (height - line_b.offset[Z]),
                             height,
-                        ]
+                        ])
                     ]
                 }
             })
@@ -57,8 +59,8 @@ where
 {
     current: Stage,
     inner: &'a mut T,
-    last_height: f32,
-    step: f32,
+    last_height: f64,
+    step: f64,
 }
 
 impl<'a, T> Iterator for SliceIterator<'a, T>
@@ -81,7 +83,7 @@ where
 
 pub trait IterSlices {
     type Inner: Iterator<Item = Stage>;
-    fn iter_slices(&mut self, step: f32) -> Option<SliceIterator<Self::Inner>>;
+    fn iter_slices(&mut self, step: f64) -> Option<SliceIterator<Self::Inner>>;
 }
 
 impl<T> IterSlices for T
@@ -89,7 +91,7 @@ where
     T:Iterator<Item = Stage>
 {
     type Inner = T;
-    fn iter_slices(&mut self, step: f32) -> Option<SliceIterator<Self::Inner>> {
+    fn iter_slices(&mut self, step: f64) -> Option<SliceIterator<Self::Inner>> {
         let current = self.next()?;
 
         Some(SliceIterator {

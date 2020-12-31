@@ -6,8 +6,8 @@ pub enum Axis {
 #[derive(Debug, Clone)]
 pub enum Transform {
     Center,
-    Rotate(Axis, f32),
-    Move(f32, f32, f32),
-    Scale(f32, f32, f32),
-    Homothety(f32),
+    Rotate(Axis, f64),
+    Move(f64, f64, f64),
+    Scale(f64, f64, f64),
+    Homothety(f64),
 }

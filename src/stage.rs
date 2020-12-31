@@ -3,18 +3,18 @@ use stl_io::{Triangle, Vertex};
 
 #[derive(Debug, Clone)]
 pub struct Stage {
-    pub min_height: f32,
-    pub max_height: f32,
+    pub min_height: f64,
+    pub max_height: f64,
     // Line, Line, Normal
-    pub links: Vec<(Line, Line, [f32; 3])>,
+    pub links: Vec<(Line, Line, Vertex)>,
 }
 
 pub trait GetStage {
-    fn get_stage(&self, min_height: f32) -> Option<Stage>;
+    fn get_stage(&self, min_height: f64) -> Option<Stage>;
 }
 
 impl GetStage for stl_io::IndexedMesh {
-    fn get_stage(&self, min_height: f32) -> Option<Stage> {
+    fn get_stage(&self, min_height: f64) -> Option<Stage> {
         let highest = self.highest()?;
         let mut current_height = highest;
 
@@ -93,7 +93,7 @@ impl GetStage for stl_io::IndexedMesh {
                         normal,
                         vertices: [b, c],
                     },
-                    // Dissmissing last segment (0,1) which is flat
+                    // Dissmissing last segment (a,b) which is flat or under limits
                 ];
             } else {
                 segments = vec![
@@ -105,7 +105,7 @@ impl GetStage for stl_io::IndexedMesh {
                         normal,
                         vertices: [a, c],
                     },
-                    // Dissmissing last segment (1,2) which won't collide
+                    // Dissmissing last segment (b,c) which is over limits
                 ];
             }
 
@@ -123,7 +123,7 @@ impl GetStage for stl_io::IndexedMesh {
 #[derive(Debug)]
 pub struct StageIterator<'a, T: GetStage> {
     inner: &'a T,
-    last_height: f32,
+    last_height: f64,
 }
 
 impl<'a, T: GetStage> Iterator for StageIterator<'a, T> {

@@ -1,5 +1,5 @@
-use std::convert::From;
-use stl_io::{Triangle, Vertex};
+use std::{convert::From, f64::EPSILON};
+use stl_io::{Triangle, Vertex, Vector};
 
 mod polygon;
 
@@ -11,13 +11,13 @@ pub const X: usize = 0;
 
 pub fn default_triangle() -> Triangle {
     Triangle {
-        normal: [0.0; 3],
-        vertices: [[0.0; 3]; 3],
+        normal: Vector::new([0.0; 3]),
+        vertices: [Vector::new([0.0; 3]); 3],
     }
 }
 
-pub fn equal_float(a: f32, b: f32) -> bool {
-    a <= b + 0.0001 && a >= b - 0.0001
+pub fn equal_float(a: f64, b: f64) -> bool {
+    a <= b + EPSILON && a >= b - EPSILON
 }
 
 pub fn equal_vertices(a: Vertex, b: Vertex) -> bool {
@@ -56,7 +56,7 @@ impl Segment {
 
 #[derive(Debug, Clone)]
 pub struct Line {
-    pub delta: (f32, f32),
+    pub delta: (f64, f64),
     pub offset: Vertex,
 }
 
@@ -77,11 +77,11 @@ impl From<&Segment> for Line {
 }
 
 pub trait Lowest {
-    fn lowest(&self) -> Option<f32>;
+    fn lowest(&self) -> Option<f64>;
 }
 
 impl Lowest for stl_io::IndexedMesh {
-    fn lowest(&self) -> Option<f32> {
+    fn lowest(&self) -> Option<f64> {
         let first = self.vertices.first()?[Z];
         Some(
             self.vertices
@@ -92,11 +92,11 @@ impl Lowest for stl_io::IndexedMesh {
 }
 
 pub trait Highest {
-    fn highest(&self) -> Option<f32>;
+    fn highest(&self) -> Option<f64>;
 }
 
 impl Highest for stl_io::IndexedMesh {
-    fn highest(&self) -> Option<f32> {
+    fn highest(&self) -> Option<f64> {
         let first = self.vertices.first()?[Z];
         Some(
             self.vertices
@@ -107,15 +107,17 @@ impl Highest for stl_io::IndexedMesh {
 }
 
 pub trait Scale {
-    fn scale(self, x: f32, y: f32, z: f32) -> Self;
+    fn scale(self, x: f64, y: f64, z: f64) -> Self;
 }
 
 impl Scale for stl_io::IndexedMesh {
-    fn scale(mut self, x: f32, y: f32, z: f32) -> Self {
+    fn scale(mut self, x: f64, y: f64, z: f64) -> Self {
         for vertice in self.vertices.iter_mut() {
-            vertice[X] = vertice[X] * x;
-            vertice[Y] = vertice[Y] * y;
-            vertice[Z] = vertice[Z] * z;
+            let x = vertice[X] * x;
+            let y = vertice[Y] * y;
+            let z = vertice[Z] * z;
+
+            *vertice = Vertex::new([x, y, z])
         }
         
         self
@@ -123,28 +125,30 @@ impl Scale for stl_io::IndexedMesh {
 }
 
 pub trait Homothety {
-    fn homothety(self, s: f32) -> Self;
+    fn homothety(self, s: f64) -> Self;
 }
 
 impl<T> Homothety for T
 where 
     T: Scale
 {
-    fn homothety(self, s: f32) -> Self {
+    fn homothety(self, s: f64) -> Self {
         self.scale(s, s, s)
     }
 }
 
 pub trait Displace {
-    fn displace(self, x: f32, y: f32, z: f32) -> Self;
+    fn displace(self, x: f64, y: f64, z: f64) -> Self;
 }
 
 impl Displace for stl_io::IndexedMesh {
-    fn displace(mut self, x: f32, y: f32, z: f32) -> Self {
+    fn displace(mut self, x: f64, y: f64, z: f64) -> Self {
         for vertice in self.vertices.iter_mut() {
-            vertice[X] = vertice[X] + x;
-            vertice[Y] = vertice[Y] + y;
-            vertice[Z] = vertice[Z] + z;
+            let x = vertice[X] + x;
+            let y = vertice[Y] + y;
+            let z = vertice[Z] + z;
+
+            *vertice = Vertex::new([x, y, z])
         }
         
         self       
@@ -153,51 +157,57 @@ impl Displace for stl_io::IndexedMesh {
 
 // TODO: Use Quaternions
 pub trait RotateX {
-    fn rotate_x(self, theta: f32) -> Self;
+    fn rotate_x(self, theta: f64) -> Self;
 }
 
 impl RotateX for stl_io::IndexedMesh {
-    fn rotate_x(mut self, theta: f32) -> Self {
+    fn rotate_x(mut self, theta: f64) -> Self {
         let cos_t = theta.cos();
         let sin_t = theta.sin();
 
         for vertice in self.vertices.iter_mut() {
-            vertice[Y] = cos_t * vertice[Y] - sin_t * vertice[Z];
-            vertice[Z] = sin_t * vertice[Y] + cos_t * vertice[Z];
+            let y = cos_t * vertice[Y] - sin_t * vertice[Z];
+            let z = sin_t * vertice[Y] + cos_t * vertice[Z];
+
+            *vertice = Vertex::new([vertice[X], y, z])
         }
 
         self
     }
 }
 pub trait RotateY {
-    fn rotate_y(self, theta: f32) -> Self;
+    fn rotate_y(self, theta: f64) -> Self;
 }
 
 impl RotateY for stl_io::IndexedMesh {
-    fn rotate_y(mut self, theta: f32) -> Self {
+    fn rotate_y(mut self, theta: f64) -> Self {
         let cos_t = theta.cos();
         let sin_t = theta.sin();
 
         for vertice in self.vertices.iter_mut() {
-            vertice[X] = cos_t * vertice[X] + sin_t * vertice[Z];
-            vertice[Z] = cos_t * vertice[Z] - sin_t * vertice[X];
+            let x = cos_t * vertice[X] + sin_t * vertice[Z];
+            let z = cos_t * vertice[Z] - sin_t * vertice[X];
+
+            *vertice = Vertex::new([x, vertice[Y], z])
         }
 
         self
     }
 }
 pub trait RotateZ {
-    fn rotate_z(self, theta: f32) -> Self;
+    fn rotate_z(self, theta: f64) -> Self;
 }
 
 impl RotateZ for stl_io::IndexedMesh {
-    fn rotate_z(mut self, theta: f32) -> Self {
+    fn rotate_z(mut self, theta: f64) -> Self {
         let cos_t = theta.cos();
         let sin_t = theta.sin();
 
         for vertice in self.vertices.iter_mut() {
-            vertice[X] = cos_t * vertice[X] - sin_t * vertice[Y];
-            vertice[Y] = sin_t * vertice[X] + cos_t * vertice[Y];
+            let x = cos_t * vertice[X] - sin_t * vertice[Y];
+            let y = sin_t * vertice[X] + cos_t * vertice[Y];
+
+            *vertice = Vertex::new([x, y, vertice[Z]])
         }
 
         self
@@ -210,16 +220,16 @@ pub trait Center {
 
 impl Center for stl_io::IndexedMesh {
     fn center(self) -> Self {
-        let len = self.vertices.len() as f32;
+        let len = self.vertices.len() as f64;
         let first = self.vertices.iter().next();
 
         if let Some(first) = first {
             let total = self.vertices.iter().fold(*first, |acc, v| {
-                [
+                Vector::new([
                     acc[X] + v[X],
                     acc[Y] + v[Y],
                     acc[Z] + v[Z],
-                ]
+                ])
             });
 
             let offset = [

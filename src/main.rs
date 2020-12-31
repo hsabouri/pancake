@@ -71,7 +71,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut file = OpenOptions::new().read(true).open(file_path).unwrap();
 
-    let layer_height: f32 = matches
+    let layer_height: f64 = matches
         .value_of("layer_height")
         .unwrap_or(&"0.1".to_string())
         .parse()

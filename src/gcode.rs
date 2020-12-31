@@ -54,12 +54,12 @@ M82 ;absolute extrusion mode
 M104 S0
 ";
 
-pub const FLOW: f32 = 0.045;
+pub const FLOW: f64 = 0.045;
 
 use super::Slice;
 use super::{X, Y, Z};
 
-fn get_distance(a: Vec4, b: Vec4) -> f32 {
+fn get_distance(a: Vec4, b: Vec4) -> f64 {
     let x = a.x - b.x;
     let y = a.y - b.y;
     let z = a.z - b.z;
@@ -69,10 +69,10 @@ fn get_distance(a: Vec4, b: Vec4) -> f32 {
 
 #[derive(Debug, Clone)]
 pub struct Vec4 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub e: f32,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub e: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -83,7 +83,7 @@ pub struct Printer {
 
 impl Printer {
     // Absolute position
-    fn move_to(&mut self, x: f32, y: f32, z: f32, e: f32) {
+    fn move_to(&mut self, x: f64, y: f64, z: f64, e: f64) {
         self.cur_pos.x = x;
         self.cur_pos.y = y;
         self.cur_pos.z = z;
@@ -93,7 +93,7 @@ impl Printer {
     }
 
     // Relative position
-    fn move_by(&mut self, x: f32, y: f32, z: f32, e: f32) {
+    fn move_by(&mut self, x: f64, y: f64, z: f64, e: f64) {
         self.move_to(
             self.cur_pos.x + x,
             self.cur_pos.y + y,
@@ -103,7 +103,7 @@ impl Printer {
     }
 
     // Absolute position
-    fn print_to(&mut self, x: f32, y: f32, z: f32) {
+    fn print_to(&mut self, x: f64, y: f64, z: f64) {
         let e = get_distance(self.cur_pos.clone(), Vec4 {x, y, z, e: 0.0}) * FLOW;
 
         self.move_to(
@@ -115,7 +115,7 @@ impl Printer {
     }
 
     // Relative position
-    fn print_by(&mut self, x: f32, y: f32, z: f32) {
+    fn print_by(&mut self, x: f64, y: f64, z: f64) {
         let e = get_distance(
             Vec4 {x: 0.0, y: 0.0, z: 0.0, e: 0.0},
             Vec4 {x, y, z, e: 0.0}
@@ -124,13 +124,13 @@ impl Printer {
         self.move_by(x, y, z, e);
     }
 
-    pub fn print<T>(input: T, layer_height: f32) -> Option<()> 
+    pub fn print<T>(input: T, layer_height: f64) -> Option<()> 
         where T: Iterator<Item = Slice>
     {
         println!("{}", init);
         println!("{}", init2);
 
-        let first_layer_height: f32 = layer_height / 2.0;
+        let first_layer_height: f64 = layer_height / 2.0;
 
         let mut state = Printer {
             cur_pos: Vec4 {
