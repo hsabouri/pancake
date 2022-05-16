@@ -45,7 +45,7 @@ fn main() -> anyhow::Result<()> {
         .arg(
             Arg::new("model")
                 .required(true)
-                .about(".stl file to slice")
+                .help(".stl file to slice")
                 .value_name("MODEL"),
         )
         .arg(
@@ -54,14 +54,14 @@ fn main() -> anyhow::Result<()> {
                 .short('l')
                 .long("layer-height")
                 .default_value("0.1")
-                .about("Layer height in millimeters"),
+                .help("Layer height in millimeters"),
         )
         .arg(
             Arg::new("transform")
                 .short('t')
                 .long("transform")
                 .takes_value(true)
-                .about("Transform the model before slicing"),
+                .help("Transform the model before slicing"),
         )
         .get_matches();
 

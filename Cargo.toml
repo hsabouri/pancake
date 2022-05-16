@@ -10,11 +10,8 @@ build = "build.rs"
 [build-dependencies]
 lalrpop = { version = "0", features = ["lexer"] }
 
-[workspace]
-members = ["stl_io"]
-
 [dependencies]
-stl_io = { path="stl_io" }
+stl_io = {git="https://github.com/hsabouri/stl_io"}
 clap = "3.0.0-beta.2"
 anyhow = "1"
 lalrpop-util = "0"
