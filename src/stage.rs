@@ -120,13 +120,13 @@ impl GetStage for stl_io::IndexedMesh {
     }
 }
 
-#[derive(Debug)]
-pub struct StageIterator<'a, T: GetStage> {
-    inner: &'a T,
+#[derive(Debug, Clone)]
+pub struct StageIterator<T: GetStage> {
+    inner: T,
     last_height: f64,
 }
 
-impl<'a, T: GetStage> Iterator for StageIterator<'a, T> {
+impl<T: GetStage> Iterator for StageIterator<T> {
     type Item = Stage;
 
     fn next(&mut self) -> Option<Stage> {
@@ -139,15 +139,17 @@ impl<'a, T: GetStage> Iterator for StageIterator<'a, T> {
 
 pub trait IterStages {
     type Inner: GetStage;
-    fn iter_stages(&self) -> Option<StageIterator<Self::Inner>>;
+    fn iter_stages(self) -> Option<StageIterator<Self::Inner>>;
 }
 
 impl<T: GetStage + Lowest> IterStages for T {
     type Inner = T;
-    fn iter_stages(&self) -> Option<StageIterator<Self::Inner>> {
+
+    fn iter_stages(self) -> Option<StageIterator<Self::Inner>> {
+        let lowest = self.lowest()?;
         Some(StageIterator {
             inner: self,
-            last_height: self.lowest()?,
+            last_height: lowest,
         })
     }
 }
