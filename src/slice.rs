@@ -1,10 +1,6 @@
 use super::{
+    math::{Polygon, Segment, X, Y, Z},
     stage::Stage,
-    math::{
-        Segment,
-        Polygon,
-        X, Y, Z,
-    },
 };
 
 use stl_io::Vector;
@@ -24,31 +20,27 @@ impl GetSlice for Stage {
         let segments: Vec<Segment> = self
             .links
             .iter()
-            .map(|(line_a, line_b, normal)| {
-                Segment {
-                    normal: normal.clone(),
-                    vertices: [
-                        Vector::new([
-                            line_a.offset[X] + line_a.delta.0 * (height - line_a.offset[Z]),
-                            line_a.offset[Y] + line_a.delta.1 * (height - line_a.offset[Z]),
-                            height,
-                        ]),
-                        Vector::new([
-                            line_b.offset[X] + line_b.delta.0 * (height - line_b.offset[Z]),
-                            line_b.offset[Y] + line_b.delta.1 * (height - line_b.offset[Z]),
-                            height,
-                        ])
-                    ]
-                }
+            .map(|(line_a, line_b, normal)| Segment {
+                normal: normal.clone(),
+                vertices: [
+                    Vector::new([
+                        line_a.offset[X] + line_a.delta.0 * (height - line_a.offset[Z]),
+                        line_a.offset[Y] + line_a.delta.1 * (height - line_a.offset[Z]),
+                        height,
+                    ]),
+                    Vector::new([
+                        line_b.offset[X] + line_b.delta.0 * (height - line_b.offset[Z]),
+                        line_b.offset[Y] + line_b.delta.1 * (height - line_b.offset[Z]),
+                        height,
+                    ]),
+                ],
             })
             .collect();
 
-        Some(
-            Slice {
-                height,
-                polygons: Polygon::build(segments),
-            }
-        )
+        Some(Slice {
+            height,
+            polygons: Polygon::build(segments),
+        })
     }
 }
 
@@ -72,12 +64,15 @@ where
     fn next(&mut self) -> Option<Slice> {
         let height = self.last_height + self.step;
 
-        if height > self.current.max_height {
+        if height >= self.current.max_height {
             self.current = self.inner.next()?;
-        }
 
-        self.last_height = height;
-        self.current.get_slice(height)
+            self.next()
+        } else {
+            self.last_height = height;
+
+            self.current.get_slice(height)
+        }
     }
 }
 
@@ -88,7 +83,7 @@ pub trait IterSlices {
 
 impl<T> IterSlices for T
 where
-    T:Iterator<Item = Stage>
+    T: Iterator<Item = Stage>,
 {
     type Inner = T;
     fn iter_slices(&mut self, step: f64) -> Option<SliceIterator<Self::Inner>> {
