@@ -10,9 +10,11 @@ mod stage;
 
 use ast::{Axis, Transform};
 use gcode::Printer;
-use math::{Center, Displace, Homothety, RotateX, RotateY, RotateZ, Scale, X, Y, Z};
+use math::{
+    Center, Displace, Highest, Homothety, Lowest, RotateX, RotateY, RotateZ, Scale, X, Y, Z,
+};
 use slice::{IterSlices, Slice};
-use stage::IterStages;
+use stage::{IterStages, Stage};
 
 use lalrpop_util::lalrpop_mod;
 
@@ -86,7 +88,7 @@ fn main() -> anyhow::Result<()> {
     let slices: Vec<Slice> = stl
         .iter_stages()
         .unwrap()
-        .iter_slices(0.2)
+        .iter_slices(layer_height)
         .unwrap()
         .collect();
 
