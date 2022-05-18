@@ -91,7 +91,7 @@ where
 
         Some(SliceIterator {
             last_height: current.min_height,
-            current: current,
+            current,
             inner: self,
             step,
         })

@@ -1,9 +1,6 @@
-use std::convert::Into;
+use std::{convert::Into, ops::Deref};
 
-use super::{
-    Segment,
-    equal_vertices,
-};
+use super::{equal_vertices, Segment};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Push {
@@ -12,11 +9,11 @@ enum Push {
 }
 
 #[derive(Debug, Clone)]
-pub struct Polygon (Vec<Segment>);
+pub struct Polygon(Vec<Segment>);
 
 impl Polygon {
     pub fn new(into: Vec<Segment>) -> Self {
-        Self (into)
+        Self(into)
     }
 
     fn reverse(&mut self) {
@@ -32,8 +29,8 @@ impl Polygon {
             (Push::Front, Push::Back) => {
                 a.reverse();
                 b.reverse();
-            },
-            _ => ()
+            }
+            _ => (),
         };
 
         a.0.extend(b.0.into_iter());
@@ -66,22 +63,31 @@ impl Polygon {
     }
 
     fn find_and_assign(poly_vec: &mut Vec<Self>, seg: Segment) {
-        let poly_ids: Vec<(usize, Push)> = poly_vec.iter().enumerate().filter_map(|(i, poly)| {
+        let poly_ids: Vec<(usize, Push)> = poly_vec
+            .iter()
+            .enumerate()
+            .filter_map(|(i, poly)| {
+                let belongs = poly.0.iter().find_map(|poly_seg| {
+                    if equal_vertices(seg.vertices[0], poly_seg.vertices[0])
+                        || equal_vertices(seg.vertices[1], poly_seg.vertices[0])
+                    {
+                        Some(Push::Front)
+                    } else if equal_vertices(seg.vertices[0], poly_seg.vertices[1])
+                        || equal_vertices(seg.vertices[1], poly_seg.vertices[1])
+                    {
+                        Some(Push::Back)
+                    } else {
+                        None
+                    }
+                });
 
-            let belongs = poly.0.iter().find_map(|poly_seg| {
-                if equal_vertices(seg.vertices[0], poly_seg.vertices[0])
-                || equal_vertices(seg.vertices[1], poly_seg.vertices[0]) {
-                    Some(Push::Front)
-                } else if equal_vertices(seg.vertices[0], poly_seg.vertices[1])
-                || equal_vertices(seg.vertices[1], poly_seg.vertices[1]) {
-                    Some(Push::Back)
-                } else {None}
-            });
-
-            if let Some(push) = belongs {
-                Some((i, push))
-            } else {None}
-        }).collect();
+                if let Some(push) = belongs {
+                    Some((i, push))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         if let Some((i, action)) = poly_ids.first() {
             if *action == Push::Back {
@@ -108,6 +114,14 @@ impl Polygon {
         eprintln!("Number of polys : {}", ret.len());
 
         ret
+    }
+}
+
+impl Deref for Polygon {
+    type Target = Vec<Segment>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

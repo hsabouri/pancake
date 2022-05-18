@@ -1,5 +1,5 @@
 use std::{convert::From, f64::EPSILON};
-use stl_io::{Triangle, Vertex, Vector};
+use stl_io::{Triangle, Vector, Vertex};
 
 mod polygon;
 
@@ -21,9 +21,7 @@ pub fn equal_float(a: f64, b: f64) -> bool {
 }
 
 pub fn equal_vertices(a: Vertex, b: Vertex) -> bool {
-    equal_float(a[0], b[0])
-    && equal_float(a[1], b[1])
-    && equal_float(a[2], b[2])
+    equal_float(a[0], b[0]) && equal_float(a[1], b[1]) && equal_float(a[2], b[2])
 }
 
 #[derive(Debug, Clone)]
@@ -67,10 +65,7 @@ impl From<&Segment> for Line {
         let h = b[Z] - a[Z];
 
         Line {
-            delta: (
-                (b[X] - a[X]) / h,
-                (b[Y] - a[Y]) / h,
-            ),
+            delta: ((b[X] - a[X]) / h, (b[Y] - a[Y]) / h),
             offset: a,
         }
     }
@@ -119,7 +114,7 @@ impl Scale for stl_io::IndexedMesh {
 
             *vertice = Vertex::new([x, y, z])
         }
-        
+
         self
     }
 }
@@ -129,8 +124,8 @@ pub trait Homothety {
 }
 
 impl<T> Homothety for T
-where 
-    T: Scale
+where
+    T: Scale,
 {
     fn homothety(self, s: f64) -> Self {
         self.scale(s, s, s)
@@ -150,8 +145,8 @@ impl Displace for stl_io::IndexedMesh {
 
             *vertice = Vertex::new([x, y, z])
         }
-        
-        self       
+
+        self
     }
 }
 
@@ -225,18 +220,10 @@ impl Center for stl_io::IndexedMesh {
 
         if let Some(first) = first {
             let total = self.vertices.iter().fold(*first, |acc, v| {
-                Vector::new([
-                    acc[X] + v[X],
-                    acc[Y] + v[Y],
-                    acc[Z] + v[Z],
-                ])
+                Vector::new([acc[X] + v[X], acc[Y] + v[Y], acc[Z] + v[Z]])
             });
 
-            let offset = [
-                total[X] / len,
-                total[Y] / len,
-                total[Z] / len,
-            ];
+            let offset = [total[X] / len, total[Y] / len, total[Z] / len];
 
             self.displace(offset[X], offset[Y], offset[Z])
         } else {
