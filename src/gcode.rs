@@ -56,6 +56,10 @@ M104 S0
 
 pub const FLOW: f64 = 0.045;
 
+use stl_io::Vector;
+
+use crate::math::equal_vertices;
+
 use super::Slice;
 use super::{X, Y, Z};
 
@@ -104,28 +108,29 @@ impl Printer {
 
     // Absolute position
     fn print_to(&mut self, x: f64, y: f64, z: f64) {
-        let e = get_distance(self.cur_pos.clone(), Vec4 {x, y, z, e: 0.0}) * FLOW;
+        let e = get_distance(self.cur_pos.clone(), Vec4 { x, y, z, e: 0.0 }) * FLOW;
 
-        self.move_to(
-            x,
-            y,
-            z,
-            self.cur_pos.e + e,
-        );
+        self.move_to(x, y, z, self.cur_pos.e + e);
     }
 
     // Relative position
     fn print_by(&mut self, x: f64, y: f64, z: f64) {
         let e = get_distance(
-            Vec4 {x: 0.0, y: 0.0, z: 0.0, e: 0.0},
-            Vec4 {x, y, z, e: 0.0}
+            Vec4 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+                e: 0.0,
+            },
+            Vec4 { x, y, z, e: 0.0 },
         ) * FLOW;
 
         self.move_by(x, y, z, e);
     }
 
-    pub fn print<T>(input: T, layer_height: f64) -> Option<()> 
-        where T: Iterator<Item = Slice>
+    pub fn print<T>(input: T, layer_height: f64) -> Option<()>
+    where
+        T: Iterator<Item = Slice>,
     {
         println!("{}", init);
         println!("{}", init2);
@@ -144,7 +149,7 @@ impl Printer {
                 y: 0.0,
                 z: 0.0,
                 e: 0.0,
-            }
+            },
         };
 
         // Center print-head
@@ -174,12 +179,18 @@ impl Printer {
                             e: 0.0,
                         };
                     } else {
-                        state.move_by(
-                            first_point[X] - state.offset.x,
-                            first_point[Y] - state.offset.y,
-                            first_point[Z] - state.offset.z,
-                            0.0,
-                        );
+                        if !equal_vertices(
+                            first_point,
+                            Vector::new([state.offset.x, state.offset.y, state.offset.z]),
+                        ) {
+                            state.move_by(
+                                first_point[X] - state.offset.x,
+                                first_point[Y] - state.offset.y,
+                                first_point[Z] - state.offset.z,
+                                0.0,
+                            );
+                        }
+
                         state.offset = Vec4 {
                             x: first_point[X],
                             y: first_point[Y],
@@ -209,13 +220,3 @@ impl Printer {
         Some(())
     }
 }
-
-
-
-
-
-
-
-
-
-
