@@ -6,6 +6,8 @@ use super::{equal_vertices, Segment};
 enum Push {
     Back,
     Front,
+    BackRevert,
+    FrontRevert,
 }
 
 #[derive(Debug, Clone)]
@@ -16,6 +18,17 @@ impl Polygon {
         Self(into)
     }
 
+    fn add_segment(&mut self, segment: Segment, action: Push) {
+        use Push::*;
+
+        match action {
+            Front => self.0.insert(0, segment),
+            FrontRevert => self.0.insert(0, segment.reverted()),
+            Back => self.0.push(segment),
+            BackRevert => self.0.push(segment.reverted()),
+        }
+    }
+
     fn reverse(&mut self) {
         self.0.reverse();
 
@@ -23,10 +36,12 @@ impl Polygon {
     }
 
     fn merge_polys(mut a: Self, mut b: Self, action_a: Push, action_b: Push) -> Self {
+        use Push::*;
+
         match (action_a, action_b) {
-            (Push::Back, Push::Back) => b.reverse(),
-            (Push::Front, Push::Front) => a.reverse(),
-            (Push::Front, Push::Back) => {
+            (Back | BackRevert, Back | BackRevert) => b.reverse(),
+            (Front | FrontRevert, Front | FrontRevert) => a.reverse(),
+            (Front | FrontRevert, Back | BackRevert) => {
                 a.reverse();
                 b.reverse();
             }
@@ -67,15 +82,17 @@ impl Polygon {
             .iter()
             .enumerate()
             .filter_map(|(i, poly)| {
+                // Find one or multiple polygons where the segment is attached
+                // Save in which manner to push the segment to the polygon
                 let belongs = poly.0.iter().find_map(|poly_seg| {
-                    if equal_vertices(seg.vertices[0], poly_seg.vertices[0])
-                        || equal_vertices(seg.vertices[1], poly_seg.vertices[0])
-                    {
+                    if equal_vertices(seg.vertices[0], poly_seg.vertices[0]) {
+                        Some(Push::FrontRevert)
+                    } else if equal_vertices(seg.vertices[1], poly_seg.vertices[0]) {
                         Some(Push::Front)
-                    } else if equal_vertices(seg.vertices[0], poly_seg.vertices[1])
-                        || equal_vertices(seg.vertices[1], poly_seg.vertices[1])
-                    {
+                    } else if equal_vertices(seg.vertices[0], poly_seg.vertices[1]) {
                         Some(Push::Back)
+                    } else if equal_vertices(seg.vertices[1], poly_seg.vertices[1]) {
+                        Some(Push::BackRevert)
                     } else {
                         None
                     }
@@ -89,17 +106,21 @@ impl Polygon {
             })
             .collect();
 
+        // If found, add the segment to the polygon
         if let Some((i, action)) = poly_ids.first() {
-            if *action == Push::Back {
-                poly_vec.get_mut(*i).unwrap().0.push(seg.clone());
-            } else if *action == Push::Front {
-                poly_vec.get_mut(*i).unwrap().0.insert(0, seg.clone());
-            }
+            poly_vec
+                .get_mut(*i)
+                .unwrap()
+                .add_segment(seg.clone(), *action);
 
+            // the segment could be linked to two polygones
             Self::merge_matches(poly_vec, poly_ids);
         } else {
+            // Else, create a new polygon
             poly_vec.push(Polygon::new(vec![seg.clone()]));
         }
+
+        eprintln!("Number of polys : {}", poly_vec.len());
     }
 
     pub fn build(input: Vec<Segment>) -> Vec<Self> {
@@ -110,8 +131,6 @@ impl Polygon {
 
             Self::find_and_assign(&mut ret, seg);
         }
-
-        eprintln!("Number of polys : {}", ret.len());
 
         ret
     }

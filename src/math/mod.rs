@@ -1,4 +1,4 @@
-use std::{convert::From, f64::EPSILON};
+use std::convert::From;
 use stl_io::{Triangle, Vector, Vertex};
 
 mod polygon;
@@ -8,6 +8,7 @@ pub use polygon::Polygon;
 pub const Z: usize = 2;
 pub const Y: usize = 1;
 pub const X: usize = 0;
+pub const EPSILON: f64 = 0.001;
 
 pub fn default_triangle() -> Triangle {
     Triangle {
@@ -34,8 +35,21 @@ impl Segment {
     pub fn reverse(&mut self) {
         let (a, b) = (self.vertices[1], self.vertices[0]);
 
+        // FIXME: Revert normal
+
         self.vertices[0] = a;
         self.vertices[1] = b;
+    }
+
+    pub fn reverted(mut self) -> Self {
+        let (a, b) = (self.vertices[1], self.vertices[0]);
+
+        self.vertices[0] = a;
+        self.vertices[1] = b;
+
+        // FIXME: Revert normal
+
+        self
     }
 
     pub fn correct_direction(&mut self) {
